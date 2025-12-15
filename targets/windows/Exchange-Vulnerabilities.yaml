@@ -1,0 +1,63 @@
+Name: ExchangeVulnerability
+Description: Targeted log collection to verify specific Exchange vulnerabilities (ProxyLogon, ProxyShell, OWASSRF) and web shell activity.
+Author: Ilostab
+Rules:
+  # ---------------------------------------------------------------------------
+  # PROXYLOGON (CVE-2021-26855, CVE-2021-27065)
+  # Attackers bypass auth via port 443 and write a shell via OAB.
+  # ---------------------------------------------------------------------------
+  - Name: ProxyLogon_SSRF
+    Category: Vulnerability_ProxyLogon
+    Comment: 'Verifies CVE-2021-26855. Look for "ServerInfo~a]" in the URL or UserAgents like "ExchangeServicesClient/0.0.0.0".'
+    Glob: C:\Program Files\Microsoft\Exchange Server\V15\Logging\HttpProxy\Autodiscover\*.log
+
+  - Name: ProxyLogon_OAB
+    Category: Vulnerability_ProxyLogon
+    Comment: 'Verifies CVE-2021-27065. Attackers use the OAB generator to write a webshell. Look for file paths not ending in .oab.'
+    Glob: C:\Program Files\Microsoft\Exchange Server\V15\Logging\OABGeneratorLog\*.log
+
+  # ---------------------------------------------------------------------------
+  # PROXYSHELL (CVE-2021-34473, CVE-2021-34523, CVE-2021-31207)
+  # Attackers downgrade valid admin tokens to execute PowerShell.
+  # ---------------------------------------------------------------------------
+  - Name: ProxyShell_Autodiscover
+    Category: Vulnerability_ProxyShell
+    Comment: 'Verifies CVE-2021-34473. Look for "autodiscover.json?@evil.com" or "Email=autodiscover/powershell" in the URL.'
+    Glob: C:\Program Files\Microsoft\Exchange Server\V15\Logging\HttpProxy\Autodiscover\*.log
+
+  - Name: ProxyShell_Powershell
+    Category: Vulnerability_ProxyShell
+    Comment: 'Verifies payload execution. Look for the "New-MailboxExportRequest" cmdlet used to write shells.'
+    Glob: C:\Program Files\Microsoft\Exchange Server\V15\Logging\CmdletInfra\Powershell-Proxy\*.log
+
+  # ---------------------------------------------------------------------------
+  # OWASSRF & PROXYNOTSHELL (CVE-2022-41080, CVE-2022-41040)
+  # Bypasses ProxyShell mitigations by attacking OWA or ECP endpoints.
+  # ---------------------------------------------------------------------------
+  - Name: OWASSRF_Owa
+    Category: Vulnerability_OWASSRF
+    Comment: 'Verifies CVE-2022-41080. Look for suspicious PowerShell requests routed through /owa/ instead of /powershell/.'
+    Glob: C:\Program Files\Microsoft\Exchange Server\V15\Logging\HttpProxy\Owa\*.log
+
+  - Name: ProxyNotShell_Ecp
+    Category: Vulnerability_ProxyNotShell
+    Comment: 'Verifies CVE-2022-41040. Look for SSRF patterns similar to ProxyLogon but targeting the ECP endpoint.'
+    Glob: C:\Program Files\Microsoft\Exchange Server\V15\Logging\HttpProxy\Ecp\*.log
+
+  # ---------------------------------------------------------------------------
+  # WEB SHELL & PERSISTENCE (Generic Post-Exploitation)
+  # ---------------------------------------------------------------------------
+  - Name: IIS_W3SVC
+    Category: WebShell_Detection
+    Comment: 'The primary record of web shell access. Look for POST requests to .aspx files that are NOT standard Exchange files.'
+    Glob: C:\inetpub\logs\LogFiles\W3SVC*\*.log
+
+  - Name: ASPNET_TempFiles
+    Category: WebShell_Artifacts
+    Comment: 'Compiled web shells persist here as DLLs even if the .aspx source is deleted.'
+    Glob: C:\Windows\Microsoft.NET\Framework64\*\Temporary ASP.NET Files\root\**\*.dll
+
+  - Name: UM_WorkerProcess
+    Category: Deserialization
+    Comment: 'Relevant for vulnerabilities affecting Unified Messaging (CVE-2021-26857). Look for unexpected process spawning.'
+    Glob: C:\Program Files\Microsoft\Exchange Server\V15\Logging\UM\*.log

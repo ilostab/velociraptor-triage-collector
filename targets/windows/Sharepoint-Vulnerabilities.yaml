@@ -1,0 +1,46 @@
+Name: SharePointVulnerability
+Description: Collection of SharePoint-specific application logs and configs to verify CVE-2019-0604, CVE-2023-29357, and web shell persistence.
+Author: Ilostab
+Rules:
+  # ---------------------------------------------------------------------------
+  # ULS LOGS (Unified Logging Service)
+  # The primary diagnostic log for SharePoint.
+  # ---------------------------------------------------------------------------
+  - Name: SharePoint_ULS_Logs
+    Category: Application_Trace
+    Comment: 'Critical for CVE-2019-0604. Search for "System.Workflow.ComponentModel.Serialization" or "Encoding.ASCII.GetString" errors.'
+    Glob: C:\Program Files\Common Files\microsoft shared\Web Server Extensions\*\LOGS\*.log
+
+  # ---------------------------------------------------------------------------
+  # IIS LOGS (Web Requests)
+  # ---------------------------------------------------------------------------
+  - Name: IIS_W3SVC
+    Category: WebServer
+    Comment: 'Captures the initial exploit vectors. Look for POST requests to "/_layouts/15/Picker.aspx" or unusually long query strings.'
+    Glob: C:\inetpub\logs\LogFiles\W3SVC*\*.log
+
+  # ---------------------------------------------------------------------------
+  # CONFIGURATION FILES (Persistence & Tampering)
+  # ---------------------------------------------------------------------------
+  - Name: WebConfig_VirtualDir
+    Category: Persistence_Config
+    Comment: 'Checks for "PageParserPaths" or "SafeControls" modifications that allow unauthorized scripts to run.'
+    Glob: C:\inetpub\wwwroot\wss\VirtualDirectories\*\web.config
+
+  - Name: WebConfig_Root
+    Category: Persistence_Config
+    Comment: 'The global configuration file for the SharePoint hive. Modifications here are rare and highly suspicious.'
+    Glob: C:\Program Files\Common Files\microsoft shared\Web Server Extensions\*\CONFIG\web.config
+
+  # ---------------------------------------------------------------------------
+  # SPECIFIC EXPLOIT ARTIFACTS
+  # ---------------------------------------------------------------------------
+  - Name: TimerService_Cache
+    Category: Cache_Forensics
+    Comment: 'SharePoint Config Cache (cache.ini). Modification timestamps here that do not align with patch cycles can indicate tampering.'
+    Glob: C:\ProgramData\Microsoft\SharePoint\Config\*\cache.ini
+
+  - Name: Temporary_ASPNET_Files
+    Category: WebShell_Artifacts
+    Comment: 'Compiled web shell remnants (DLLs). Attackers delete the .aspx source, but the compiled .dll often remains here.'
+    Glob: C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Temporary ASP.NET Files\root\**\*.dll

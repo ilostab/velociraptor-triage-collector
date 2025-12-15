@@ -5,6 +5,8 @@ Description: |
 TargetDirectories:
   - KapeFiles/Targets/
   - config/WindowsTargets/
+  - targets/windows/
+  - targets/compounds/
 
 ArtifactTemplate: templates/Windows.Triage.Targets.yaml
 

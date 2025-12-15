@@ -1,0 +1,8 @@
+Name: _vulnerabilities
+Description: Collect logs for common vulnerabilities
+Targets:
+ - Name: Exchange Vulnerabilities
+   Ref: ExchangeVulnerability
+
+ - Name: Sharepoint Vulnerabilities
+   Ref: SharePointVulnerability
